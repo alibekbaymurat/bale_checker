@@ -1,5 +1,6 @@
 (function () {
   const path = window.location.pathname;
+  let currentUser = null;
 
   const fields = [
     "mowing_date",
@@ -51,6 +52,7 @@
   async function api(pathname, options) {
     const response = await fetch(pathname, {
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       ...options,
     });
     const data = await response.json().catch(() => ({}));
@@ -59,6 +61,83 @@
       throw new Error(message);
     }
     return data;
+  }
+
+  function hideViews() {
+    document.querySelectorAll(".view").forEach((view) => view.classList.add("hidden"));
+  }
+
+  async function loadSession() {
+    const data = await api("/api/auth/me");
+    currentUser = data.user;
+    renderUserbar();
+  }
+
+  function isAdmin() {
+    return currentUser && currentUser.role === "admin";
+  }
+
+  function renderUserbar() {
+    const userbar = $("#userbar");
+    if (!userbar) return;
+
+    if (!currentUser) {
+      userbar.classList.add("hidden");
+      userbar.innerHTML = "";
+      return;
+    }
+
+    userbar.classList.remove("hidden");
+    userbar.innerHTML = `
+      <span>${escapeHtml(currentUser.username)} · ${escapeHtml(currentUser.role)}</span>
+      <button class="button secondary small" type="button" data-logout>Выйти</button>
+    `;
+  }
+
+  function bindUserbar() {
+    const userbar = $("#userbar");
+    if (!userbar) return;
+
+    userbar.addEventListener("click", async (event) => {
+      if (!event.target.closest("[data-logout]")) return;
+      await api("/api/auth/logout", { method: "POST" });
+      currentUser = null;
+      renderUserbar();
+      showLogin();
+    });
+  }
+
+  function showLogin(message) {
+    hideViews();
+    const loginView = $("#login-view");
+    const loginForm = $("#login-form");
+    const loginErrors = $("#login-errors");
+    loginView.classList.remove("hidden");
+    loginErrors.textContent = message || "";
+
+    if (loginForm.dataset.bound === "true") return;
+    loginForm.dataset.bound = "true";
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      loginErrors.textContent = "";
+      const formData = new FormData(loginForm);
+
+      try {
+        const data = await api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username: formData.get("username"),
+            password: formData.get("password"),
+          }),
+        });
+        currentUser = data.user;
+        loginForm.reset();
+        renderUserbar();
+        await loadAdminRoute();
+      } catch (error) {
+        loginErrors.textContent = error.message;
+      }
+    });
   }
 
   function groupDetails(group) {
@@ -135,7 +214,9 @@
   }
 
   async function loadAdminList() {
+    hideViews();
     $("#admin-list").classList.remove("hidden");
+    $("#create-group-link").classList.toggle("hidden", !isAdmin());
     setStatus("Загрузка групп...");
     try {
       const { groups } = await api("/api/groups");
@@ -162,8 +243,10 @@
               </div>
               <div class="card-actions">
                 <a class="button secondary small" href="/group/${encodeURIComponent(group.id)}">Публичная</a>
-                <a class="button secondary small" href="/admin/edit/${encodeURIComponent(group.id)}">Редактировать</a>
-                <button class="button danger small" type="button" data-delete="${group.id}">Удалить</button>
+                ${isAdmin() ? `
+                  <a class="button secondary small" href="/admin/edit/${encodeURIComponent(group.id)}">Редактировать</a>
+                  <button class="button danger small" type="button" data-delete="${group.id}">Удалить</button>
+                ` : ""}
               </div>
             </article>
           `;
@@ -180,7 +263,11 @@
   }
 
   function bindDeletes() {
-    $("#groups-list").addEventListener("click", async (event) => {
+    const list = $("#groups-list");
+    if (list.dataset.bound === "true") return;
+    list.dataset.bound = "true";
+
+    list.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-delete]");
       if (!button) return;
       const id = button.dataset.delete;
@@ -198,12 +285,23 @@
   }
 
   async function loadForm() {
+    hideViews();
     $("#admin-form").classList.remove("hidden");
     const form = $("#group-form");
     const result = $("#created-result");
     const errors = $("#form-errors");
     const isEdit = path.startsWith("/admin/edit/");
     const id = isEdit ? decodeURIComponent(path.split("/").pop()) : null;
+
+    if (!isAdmin()) {
+      form.classList.add("hidden");
+      result.classList.add("hidden");
+      $("#form-title").textContent = "Недостаточно прав";
+      setStatus("Создавать и изменять группы могут только пользователи со статусом admin.", true);
+      return;
+    }
+
+    form.classList.remove("hidden");
 
     if (isEdit) {
       $("#form-title").textContent = `Редактирование ${id}`;
@@ -216,6 +314,9 @@
         setStatus(error.message, true);
       }
     }
+
+    if (form.dataset.bound === "true") return;
+    form.dataset.bound = "true";
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -236,6 +337,39 @@
         errors.textContent = error.message;
       }
     });
+  }
+
+  async function loadAdminRoute() {
+    if (!currentUser) {
+      showLogin();
+      return;
+    }
+
+    if (path === "/admin" || path === "/admin/") {
+      loadAdminList();
+    } else if (path === "/admin/new" || path.startsWith("/admin/edit/")) {
+      loadForm();
+    }
+  }
+
+  async function bootAdmin() {
+    bindQrActions(document);
+    bindUserbar();
+    bindDeletes();
+
+    try {
+      await loadSession();
+    } catch {
+      currentUser = null;
+      renderUserbar();
+    }
+
+    if (!currentUser) {
+      showLogin();
+      return;
+    }
+
+    await loadAdminRoute();
   }
 
   async function loadPublicGroup() {
@@ -261,12 +395,9 @@
   }
 
   if (path === "/admin" || path === "/admin/") {
-    bindQrActions(document);
-    bindDeletes();
-    loadAdminList();
+    bootAdmin();
   } else if (path === "/admin/new" || path.startsWith("/admin/edit/")) {
-    bindQrActions(document);
-    loadForm();
+    bootAdmin();
   } else if (path.startsWith("/group/")) {
     loadPublicGroup();
   }

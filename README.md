@@ -43,6 +43,22 @@ npx wrangler d1 create bale_checker_db
 npm run db:apply:remote
 ```
 
+## Авторизация
+
+Встроены роли:
+
+- `user` - может входить в личный кабинет, смотреть список групп и открывать карточки групп.
+- `admin` - может создавать, редактировать и удалять группы.
+- Без входа доступна только публичная карточка группы по QR: `/group/:id`.
+
+Для production задайте секрет подписи cookie-сессий:
+
+```bash
+npx wrangler secret put SESSION_SECRET
+```
+
+Сессия хранится в браузере 30 дней в `HttpOnly` cookie.
+
 ## Деплой
 
 ```bash

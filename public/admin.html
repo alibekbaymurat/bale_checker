@@ -9,15 +9,39 @@
   <body>
     <header class="topbar">
       <a class="brand" href="/">Bale Checker</a>
+      <div id="userbar" class="userbar hidden"></div>
     </header>
 
     <main class="shell">
+      <section id="login-view" class="view hidden">
+        <div class="section-head">
+          <div>
+            <h1>Вход</h1>
+          </div>
+        </div>
+
+        <form id="login-form" class="form-card auth-card">
+          <label>
+            Логин
+            <input name="username" type="text" autocomplete="username" required>
+          </label>
+          <label>
+            Пароль
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <div id="login-errors" class="error-list"></div>
+          <div class="actions">
+            <button class="button" type="submit">Войти</button>
+          </div>
+        </form>
+      </section>
+
       <section id="admin-list" class="view hidden">
         <div class="section-head">
           <div>
             <h1>Группы тюков</h1>
           </div>
-          <a class="button" href="/admin/new">Создать группу</a>
+          <a id="create-group-link" class="button hidden" href="/admin/new">Создать группу</a>
         </div>
         <div id="status" class="status"></div>
         <div id="groups-list" class="group-list"></div>
