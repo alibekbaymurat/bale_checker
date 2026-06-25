@@ -12,40 +12,40 @@ const REQUIRED_FIELDS = [
 
 const SESSION_COOKIE = "bc_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
-const PASSWORD_ITERATIONS = 120000;
+const PASSWORD_ITERATIONS = 100000;
 
 const USERS = {
   sagayeva_yuliana: {
     role: "user",
-    passwordHash: "ba2c51faad8d54d97f49c73b8a7717c3d2638a42d537cd379e29ff4bcdee4dfe",
+    passwordHash: "6a54d429d4aa696aabc66a418b5cb7d22f4098bd2eeece506eeb9e38304906f4",
   },
   kassilova_irina: {
     role: "admin",
-    passwordHash: "48fb0d82ed9476f6457fa958eb8fd5d274ec00e1c3246ccfa720af8afae3284f",
+    passwordHash: "ac64c6fff47d4269619bb4401a6c4d8e9209de989c23ef5212882072b001c2cd",
   },
   krakhotina_yulia: {
     role: "user",
-    passwordHash: "e007db55eeeea653b6f1119ff06effee18a04204864f000b171b8c16bb00d02d",
+    passwordHash: "b08ffda7bc93eb1a248d5d0e42f34fd36200b7bde226aff9c663f2a99554b83c",
   },
   razumovsky_dmitrii: {
     role: "user",
-    passwordHash: "ea6433ba335baff5d7a28b14c8e11ef57990e946e7c6bbbd865afdf427097cf9",
+    passwordHash: "02a8e4a21d33f3525ffc8b7be1385aa0a448e678e57fd780e02c1a33104450d4",
   },
   emshanov_vsevolod: {
     role: "user",
-    passwordHash: "87ea8a7f73c53e74988bba00e22b8f04d9d333ba5e0e3c94f5797b9b49ba04e6",
+    passwordHash: "68b6435327374ad848f74920edc2831b426fe38a448f14117dcfba3b757c47ed",
   },
   baimurat_alibek: {
     role: "admin",
-    passwordHash: "7fc43f29205f0ca4fc594c90fac3e2b5364f18b4f3ed1d31ca3c62fdfa54e219",
+    passwordHash: "af2a62b7507b517bc9256bbc6e7417d8a8ce45e91b4be3d439dccb4d14116988",
   },
   kislyi_vladimir: {
     role: "user",
-    passwordHash: "c0fcfff72be4254a7001f1c6aa7797552c09e23fde365b4763463baf9204cb7a",
+    passwordHash: "d32fa960756d7f28fa72afbd9b6f2dbc0b9e1432bf2385ec99a90e358d3c04cb",
   },
   akhmetshina_galiya: {
     role: "user",
-    passwordHash: "287c5df69ea7610b6821064b11486376102025773f78e2880f8111e14d331286",
+    passwordHash: "8ea4f430d36dc5d5818e3f73aea7c0635de5d04f718b87541519b3ecbc4ccf67",
   },
 };
 
