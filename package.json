@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev public --d1 DB=bale_checker_db",
+    "dev": "wrangler dev",
     "db:apply:local": "wrangler d1 execute bale_checker_db --local --file=./schema.sql",
     "db:apply:remote": "wrangler d1 execute bale_checker_db --remote --file=./schema.sql",
-    "deploy": "wrangler pages deploy public"
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

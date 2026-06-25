@@ -1,4 +1,0 @@
-/admin /admin.html 200
-/admin/new /admin.html 200
-/admin/edit/* /admin.html 200
-/group/* /group.html 200

@@ -1,6 +1,6 @@
 # Bale Checker
 
-Vanilla HTML/CSS/JS приложение для учета групп тюков на Cloudflare Pages, Pages Functions и D1.
+Vanilla HTML/CSS/JS приложение для учета групп тюков на Cloudflare Worker, Static Assets и D1.
 
 ## Структура
 
@@ -12,11 +12,8 @@ public/
   styles.css
   app.js
   qrcode.min.js
-functions/
-  api/
-    groups/
-      index.js
-      [id].js
+src/
+  index.js
 schema.sql
 wrangler.toml
 package.json
@@ -30,7 +27,7 @@ npm run db:apply:local
 npm run dev
 ```
 
-Откройте `http://localhost:8788`.
+Откройте URL, который покажет `wrangler dev`, обычно `http://localhost:8787`.
 
 ## Cloudflare D1
 
@@ -40,7 +37,7 @@ npm run dev
 npx wrangler d1 create bale_checker_db
 ```
 
-Скопируйте `database_id` в `wrangler.toml`, затем примените схему:
+Скопируйте `database_id` в `wrangler.toml` вместо `PASTE_DATABASE_ID_HERE`, затем примените схему:
 
 ```bash
 npm run db:apply:remote
@@ -52,10 +49,10 @@ npm run db:apply:remote
 npm run deploy
 ```
 
-В Cloudflare Pages привяжите D1 database binding:
+Деплой идет как обычный Worker со Static Assets. D1 binding задается в `wrangler.toml`:
 
 - Binding name: `DB`
-- Database: `bale_checker_db`
+- Database name: `bale_checker_db`
 
 ## URL
 

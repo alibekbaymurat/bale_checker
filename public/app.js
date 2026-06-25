@@ -44,6 +44,10 @@
     return `${window.location.origin}/group/${encodeURIComponent(id)}`;
   }
 
+  function publicPath(id) {
+    return `/group/${encodeURIComponent(id)}`;
+  }
+
   async function api(pathname, options) {
     const response = await fetch(pathname, {
       headers: { "Content-Type": "application/json" },
@@ -72,12 +76,13 @@
 
   function renderQr(container, group) {
     const url = publicUrl(group.id);
+    const path = publicPath(group.id);
     container.innerHTML = `
       <div class="qr-box print-area">
         <div id="qr-${group.id}" class="qr-code"></div>
         <div>
           <h2>QR для ${group.id}</h2>
-          <p><a class="qr-link" href="${url}">${url}</a></p>
+          <p><a class="qr-link" href="${path}">${path}</a></p>
           <div class="qr-actions">
             <button class="button small" type="button" data-download-qr="${group.id}">Скачать QR</button>
             <button class="button secondary small" type="button" data-print-qr>Печать QR</button>
@@ -139,12 +144,12 @@
         list.innerHTML = '<div class="status">Групп пока нет.</div>';
       } else {
         list.innerHTML = groups.map((group) => {
-          const url = publicUrl(group.id);
+          const path = publicPath(group.id);
           return `
             <article class="group-card">
               <div>
                 <h2>${escapeHtml(group.id)}</h2>
-                <a class="qr-link" href="${url}">${escapeHtml(url)}</a>
+                <a class="qr-link" href="${path}">${escapeHtml(path)}</a>
                 <div class="meta">
                   <div><span>Поле</span>${escapeHtml(group.field_name)}</div>
                   <div><span>Культура</span>${escapeHtml(group.crop_type)}</div>
