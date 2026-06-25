@@ -55,9 +55,19 @@
       credentials: "same-origin",
       ...options,
     });
-    const data = await response.json().catch(() => ({}));
+    const text = await response.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
+    }
     if (!response.ok) {
-      const message = data.errors ? data.errors.join("\n") : data.error || "Ошибка запроса.";
+      const message = data.errors
+        ? data.errors.join("\n")
+        : data.error || `Ошибка запроса: HTTP ${response.status}`;
       throw new Error(message);
     }
     return data;

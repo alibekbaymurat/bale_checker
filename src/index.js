@@ -43,6 +43,10 @@ const USERS = {
     role: "user",
     passwordHash: "c0fcfff72be4254a7001f1c6aa7797552c09e23fde365b4763463baf9204cb7a",
   },
+  akhmetshina_galiya: {
+    role: "user",
+    passwordHash: "287c5df69ea7610b6821064b11486376102025773f78e2880f8111e14d331286",
+  },
 };
 
 function json(data, status = 200) {
