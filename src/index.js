@@ -1,4 +1,5 @@
 const REQUIRED_FIELDS = [
+  "group_name",
   "mowing_date",
   "baling_date",
   "moisture_min_percent",
@@ -247,6 +248,7 @@ function hasValue(value) {
 
 function normalizePayload(input) {
   return {
+    group_name: String(input.group_name || "").trim(),
     mowing_date: String(input.mowing_date || "").trim(),
     baling_date: String(input.baling_date || "").trim(),
     moisture_min_percent: Number(input.moisture_min_percent),
@@ -256,6 +258,7 @@ function normalizePayload(input) {
     crop_type: String(input.crop_type || "").trim(),
     field_name: String(input.field_name || "").trim(),
     bales_count: Number.parseInt(input.bales_count, 10),
+    notes: String(input.notes || "").trim(),
   };
 }
 
@@ -295,6 +298,9 @@ function validatePayload(input) {
   if (!Number.isInteger(data.cut_number_total) || data.cut_number_total <= 0) {
     errors.push("Укос за весь период должен быть больше 0.");
   }
+  if (data.notes.length > 1000) {
+    errors.push("Примечание не должно быть длиннее 1000 символов.");
+  }
 
   return errors;
 }
@@ -319,9 +325,9 @@ async function createUniqueId(db) {
 
 async function listGroups(env) {
   const { results } = await env.DB.prepare(
-    `SELECT id, mowing_date, baling_date, moisture_min_percent, moisture_max_percent,
+    `SELECT id, group_name, mowing_date, baling_date, moisture_min_percent, moisture_max_percent,
             cut_number_this_year, cut_number_total, crop_type, field_name, bales_count,
-            created_at, updated_at
+            notes, created_at, updated_at
        FROM bale_groups
       ORDER BY baling_date DESC, created_at DESC`
   ).all();
@@ -349,12 +355,13 @@ async function createGroup(request, env) {
 
   await env.DB.prepare(
     `INSERT INTO bale_groups (
-       id, mowing_date, baling_date, moisture_min_percent, moisture_max_percent,
-       cut_number_this_year, cut_number_total, crop_type, field_name, bales_count
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       id, group_name, mowing_date, baling_date, moisture_min_percent, moisture_max_percent,
+       cut_number_this_year, cut_number_total, crop_type, field_name, bales_count, notes
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
     .bind(
       id,
+      data.group_name,
       data.mowing_date,
       data.baling_date,
       data.moisture_min_percent,
@@ -363,7 +370,8 @@ async function createGroup(request, env) {
       data.cut_number_total,
       data.crop_type,
       data.field_name,
-      data.bales_count
+      data.bales_count,
+      data.notes
     )
     .run();
 
@@ -386,7 +394,8 @@ async function updateGroup(request, env, id) {
   const data = normalizePayload(input);
   await env.DB.prepare(
     `UPDATE bale_groups
-        SET mowing_date = ?,
+        SET group_name = ?,
+            mowing_date = ?,
             baling_date = ?,
             moisture_min_percent = ?,
             moisture_max_percent = ?,
@@ -395,10 +404,12 @@ async function updateGroup(request, env, id) {
             crop_type = ?,
             field_name = ?,
             bales_count = ?,
+            notes = ?,
             updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`
   )
     .bind(
+      data.group_name,
       data.mowing_date,
       data.baling_date,
       data.moisture_min_percent,
@@ -408,6 +419,7 @@ async function updateGroup(request, env, id) {
       data.crop_type,
       data.field_name,
       data.bales_count,
+      data.notes,
       id
     )
     .run();
@@ -517,7 +529,12 @@ function htmlPath(pathname) {
   const cleanPath = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
 
   if (cleanPath === "/") return "/index.html";
-  if (cleanPath === "/admin" || cleanPath === "/admin/new" || cleanPath.startsWith("/admin/edit/")) {
+  if (
+    cleanPath === "/admin" ||
+    cleanPath === "/admin/new" ||
+    cleanPath.startsWith("/admin/edit/") ||
+    cleanPath.startsWith("/admin/group/")
+  ) {
     return "/admin.html";
   }
   if (cleanPath.startsWith("/group/")) return "/group.html";

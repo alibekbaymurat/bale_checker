@@ -45,6 +45,18 @@
         </div>
         <div id="status" class="status"></div>
         <div id="groups-list" class="group-list"></div>
+        <div id="pagination" class="pagination"></div>
+      </section>
+
+      <section id="admin-detail" class="view hidden">
+        <div class="section-head">
+          <div>
+            <h1 id="detail-title">Группа</h1>
+          </div>
+          <a class="button secondary" href="/admin">Назад</a>
+        </div>
+        <div id="detail-status" class="status"></div>
+        <article id="admin-group-detail" class="public-card hidden"></article>
       </section>
 
       <section id="admin-form" class="view hidden">
@@ -57,6 +69,10 @@
 
         <form id="group-form" class="form-card">
           <div class="grid two">
+            <label>
+              Название группы
+              <input name="group_name" type="text" required placeholder="Люцерна поле 7, укос 1">
+            </label>
             <label>
               Дата покоса
               <input name="mowing_date" type="date" required>
@@ -92,6 +108,10 @@
             <label>
               Количество тюков
               <input name="bales_count" type="number" min="1" step="1" required>
+            </label>
+            <label class="wide-field">
+              Примечание
+              <textarea name="notes" maxlength="1000" rows="5" placeholder="До 1000 символов"></textarea>
             </label>
           </div>
 

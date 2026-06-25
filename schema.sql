@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS bale_groups (
   id TEXT PRIMARY KEY,
+  group_name TEXT NOT NULL DEFAULT '',
   mowing_date TEXT NOT NULL,
   baling_date TEXT NOT NULL,
   moisture_min_percent REAL NOT NULL,
@@ -9,6 +10,7 @@ CREATE TABLE IF NOT EXISTS bale_groups (
   crop_type TEXT NOT NULL,
   field_name TEXT NOT NULL,
   bales_count INTEGER NOT NULL,
+  notes TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

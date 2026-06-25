@@ -1,8 +1,11 @@
 (function () {
   const path = window.location.pathname;
   let currentUser = null;
+  let listPage = 1;
+  const pageSize = 50;
 
   const fields = [
+    "group_name",
     "mowing_date",
     "baling_date",
     "moisture_min_percent",
@@ -12,6 +15,7 @@
     "crop_type",
     "field_name",
     "bales_count",
+    "notes",
   ];
 
   function $(selector) {
@@ -99,8 +103,14 @@
 
     userbar.classList.remove("hidden");
     userbar.innerHTML = `
-      <span>${escapeHtml(currentUser.username)} · ${escapeHtml(currentUser.role)}</span>
-      <button class="button secondary small" type="button" data-logout>Выйти</button>
+      <button class="profile-button" type="button" data-profile-toggle aria-label="Профиль">
+        <img class="profile-icon" src="/person.svg" alt="">
+      </button>
+      <div class="profile-menu hidden" data-profile-menu>
+        <div class="profile-name">${escapeHtml(currentUser.username)}</div>
+        <div class="profile-role">${escapeHtml(currentUser.role)}</div>
+        <button class="button secondary small" type="button" data-logout>Выйти</button>
+      </div>
     `;
   }
 
@@ -109,11 +119,22 @@
     if (!userbar) return;
 
     userbar.addEventListener("click", async (event) => {
+      if (event.target.closest("[data-profile-toggle]")) {
+        const menu = userbar.querySelector("[data-profile-menu]");
+        menu.classList.toggle("hidden");
+        return;
+      }
+
       if (!event.target.closest("[data-logout]")) return;
       await api("/api/auth/logout", { method: "POST" });
       currentUser = null;
       renderUserbar();
       showLogin();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (userbar.contains(event.target)) return;
+      userbar.querySelector("[data-profile-menu]")?.classList.add("hidden");
     });
   }
 
@@ -152,6 +173,8 @@
 
   function groupDetails(group) {
     return [
+      ["Название группы", group.group_name],
+      ["ID", group.id],
       ["Поле", group.field_name],
       ["Культура", group.crop_type],
       ["Дата покоса", formatDate(group.mowing_date)],
@@ -160,21 +183,23 @@
       ["Укос за год", group.cut_number_this_year],
       ["Укос за весь период", group.cut_number_total],
       ["Количество тюков", group.bales_count],
+      ["Примечание", group.notes || "-"],
     ];
+  }
+
+  function groupYear(group) {
+    return String(group.baling_date || group.mowing_date || "").slice(0, 4) || "----";
   }
 
   function renderQr(container, group) {
     const url = publicUrl(group.id);
-    const path = publicPath(group.id);
     container.innerHTML = `
       <div class="qr-box print-area">
         <div id="qr-${group.id}" class="qr-code"></div>
         <div>
           <h2>QR для ${group.id}</h2>
-          <p><a class="qr-link" href="${path}">${path}</a></p>
           <div class="qr-actions">
             <button class="button small" type="button" data-download-qr="${group.id}">Скачать QR</button>
-            <button class="button secondary small" type="button" data-print-qr>Печать QR</button>
           </div>
         </div>
       </div>
@@ -187,6 +212,44 @@
       height: 160,
       correctLevel: QRCode.CorrectLevel.M,
     });
+  }
+
+  function renderDetailCard(container, group) {
+    container.innerHTML = `
+      <h1>${escapeHtml(group.group_name || group.id)}</h1>
+      <div class="detail-grid">
+        ${groupDetails(group).map(([label, value]) => `
+          <div class="detail-row ${label === "Примечание" ? "wide-field" : ""}">
+            <span>${escapeHtml(label)}</span>${escapeHtml(value)}
+          </div>
+        `).join("")}
+      </div>
+      <div id="detail-qr-panel" class="qr-panel"></div>
+      <div class="card-actions">
+        ${isAdmin() ? `
+          <a class="button secondary small" href="/admin/edit/${encodeURIComponent(group.id)}">Редактировать</a>
+          <button class="button danger small" type="button" data-delete="${escapeHtml(group.id)}">Удалить</button>
+        ` : ""}
+      </div>
+    `;
+    renderQr($("#detail-qr-panel"), group);
+  }
+
+  function renderPagination(totalItems) {
+    const pagination = $("#pagination");
+    if (!pagination) return;
+
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    if (totalPages === 1) {
+      pagination.innerHTML = "";
+      return;
+    }
+
+    pagination.innerHTML = `
+      <button class="button secondary small" type="button" data-page="${listPage - 1}" ${listPage === 1 ? "disabled" : ""}>Назад</button>
+      <span>Страница ${listPage} из ${totalPages}</span>
+      <button class="button secondary small" type="button" data-page="${listPage + 1}" ${listPage === totalPages ? "disabled" : ""}>Вперед</button>
+    `;
   }
 
   function bindQrActions(root) {
@@ -233,38 +296,43 @@
       const list = $("#groups-list");
       if (groups.length === 0) {
         list.innerHTML = '<div class="status">Групп пока нет.</div>';
+        renderPagination(0);
       } else {
-        list.innerHTML = groups.map((group) => {
-          const path = publicPath(group.id);
+        const totalPages = Math.max(1, Math.ceil(groups.length / pageSize));
+        listPage = Math.min(listPage, totalPages);
+        const start = (listPage - 1) * pageSize;
+        const pageGroups = groups.slice(start, start + pageSize);
+
+        list.innerHTML = pageGroups.map((group, index) => {
+          const number = start + index + 1;
           return `
-            <article class="group-card">
-              <div>
-                <h2>${escapeHtml(group.id)}</h2>
-                <a class="qr-link" href="${path}">${escapeHtml(path)}</a>
-                <div class="meta">
-                  <div><span>Поле</span>${escapeHtml(group.field_name)}</div>
-                  <div><span>Культура</span>${escapeHtml(group.crop_type)}</div>
-                  <div><span>Тюки</span>${escapeHtml(group.bales_count)}</div>
-                  <div><span>Покос</span>${escapeHtml(formatDate(group.mowing_date))}</div>
-                  <div><span>Зарулонивание</span>${escapeHtml(formatDate(group.baling_date))}</div>
-                  <div><span>Влажность</span>${escapeHtml(group.moisture_min_percent)}-${escapeHtml(group.moisture_max_percent)}%</div>
-                </div>
-                <div id="qr-panel-${group.id}" class="qr-panel"></div>
+            <a class="group-card compact" href="/admin/group/${encodeURIComponent(group.id)}">
+              <div class="group-name-line">
+                <span class="group-number">${number}</span>
+                <h2>${escapeHtml(group.group_name || group.id)}</h2>
               </div>
-              <div class="card-actions">
-                <a class="button secondary small" href="/group/${encodeURIComponent(group.id)}">Публичная</a>
-                ${isAdmin() ? `
-                  <a class="button secondary small" href="/admin/edit/${encodeURIComponent(group.id)}">Редактировать</a>
-                  <button class="button danger small" type="button" data-delete="${group.id}">Удалить</button>
-                ` : ""}
+              <div class="group-summary">
+                <span>
+                  <span>Год</span>
+                  ${escapeHtml(groupYear(group))}
+                </span>
+                <span>
+                  <span>Культура</span>
+                  ${escapeHtml(group.crop_type)}
+                </span>
+                <span>
+                  <span>Поле</span>
+                  ${escapeHtml(group.field_name)}
+                </span>
+                <span>
+                  <span>Укос за год</span>
+                  ${escapeHtml(group.cut_number_this_year)}
+                </span>
               </div>
-            </article>
+            </a>
           `;
         }).join("");
-
-        for (const group of groups) {
-          renderQr($(`#qr-panel-${CSS.escape(group.id)}`), group);
-        }
+        renderPagination(groups.length);
       }
       setStatus("");
     } catch (error) {
@@ -272,26 +340,58 @@
     }
   }
 
-  function bindDeletes() {
-    const list = $("#groups-list");
-    if (list.dataset.bound === "true") return;
-    list.dataset.bound = "true";
+  function bindAdminActions() {
+    if (document.body.dataset.adminActionsBound === "true") return;
+    document.body.dataset.adminActionsBound = "true";
 
-    list.addEventListener("click", async (event) => {
+    document.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-delete]");
       if (!button) return;
+      event.preventDefault();
+
       const id = button.dataset.delete;
       if (!confirm(`Удалить группу ${id}?`)) return;
 
       button.disabled = true;
       try {
         await api(`/api/groups/${encodeURIComponent(id)}`, { method: "DELETE" });
-        await loadAdminList();
+        window.location.href = "/admin";
       } catch (error) {
         setStatus(error.message, true);
         button.disabled = false;
       }
     });
+
+    $("#pagination")?.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-page]");
+      if (!button || button.disabled) return;
+      listPage = Number.parseInt(button.dataset.page, 10);
+      await loadAdminList();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  async function loadAdminDetail() {
+    hideViews();
+    $("#admin-detail").classList.remove("hidden");
+    const id = decodeURIComponent(path.split("/").pop() || "");
+    const status = $("#detail-status");
+    const detail = $("#admin-group-detail");
+
+    status.textContent = "Загрузка группы...";
+    status.classList.remove("error");
+    detail.classList.add("hidden");
+
+    try {
+      const { group } = await api(`/api/groups/${encodeURIComponent(id)}`);
+      $("#detail-title").textContent = group.group_name || group.id;
+      renderDetailCard(detail, group);
+      detail.classList.remove("hidden");
+      status.textContent = "";
+    } catch (error) {
+      status.textContent = error.message;
+      status.classList.add("error");
+    }
   }
 
   async function loadForm() {
@@ -312,9 +412,9 @@
     }
 
     form.classList.remove("hidden");
+    $("#form-title").textContent = isEdit ? `Редактирование ${id}` : "Новая группа";
 
     if (isEdit) {
-      $("#form-title").textContent = `Редактирование ${id}`;
       setStatus("Загрузка группы...");
       try {
         const { group } = await api(`/api/groups/${encodeURIComponent(id)}`);
@@ -357,6 +457,8 @@
 
     if (path === "/admin" || path === "/admin/") {
       loadAdminList();
+    } else if (path.startsWith("/admin/group/")) {
+      loadAdminDetail();
     } else if (path === "/admin/new" || path.startsWith("/admin/edit/")) {
       loadForm();
     }
@@ -365,7 +467,7 @@
   async function bootAdmin() {
     bindQrActions(document);
     bindUserbar();
-    bindDeletes();
+    bindAdminActions();
 
     try {
       await loadSession();
@@ -389,7 +491,7 @@
       const { group } = await api(`/api/groups/${encodeURIComponent(id)}`);
       const card = $("#public-group");
       card.innerHTML = `
-        <h1>Группа тюков: ${escapeHtml(group.id)}</h1>
+        <h1>${escapeHtml(group.group_name || `Группа тюков: ${group.id}`)}</h1>
         <div class="detail-grid">
           ${groupDetails(group).map(([label, value]) => `
             <div class="detail-row"><span>${escapeHtml(label)}</span>${escapeHtml(value)}</div>
@@ -407,6 +509,8 @@
   if (path === "/admin" || path === "/admin/") {
     bootAdmin();
   } else if (path === "/admin/new" || path.startsWith("/admin/edit/")) {
+    bootAdmin();
+  } else if (path.startsWith("/admin/group/")) {
     bootAdmin();
   } else if (path.startsWith("/group/")) {
     loadPublicGroup();

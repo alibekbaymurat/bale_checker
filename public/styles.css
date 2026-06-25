@@ -179,10 +179,75 @@ button.button {
 }
 
 .group-card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 18px;
   padding: 18px;
+}
+
+.group-card.compact {
+  display: block;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.group-card.compact:hover {
+  border-color: rgba(40, 100, 67, 0.35);
+  transform: translateY(-1px);
+}
+
+.group-name-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.group-number {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.group-name-line h2 {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.group-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.group-summary > span {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fafbf9;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.group-summary span span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.group-summary:hover > span {
+  border-color: rgba(40, 100, 67, 0.45);
+  background: #f2f7f1;
 }
 
 .group-card h2,
@@ -229,10 +294,62 @@ button.button {
 }
 
 .userbar {
+  position: relative;
+  flex: 0 0 auto;
   justify-content: flex-end;
   color: var(--muted);
   font-size: 14px;
   font-weight: 750;
+}
+
+.profile-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.profile-button:hover {
+  border-color: rgba(40, 100, 67, 0.45);
+  background: #eef4ee;
+}
+
+.profile-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  filter: invert(30%) sepia(25%) saturate(1020%) hue-rotate(96deg) brightness(88%) contrast(87%);
+}
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.profile-name {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.profile-role {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
 }
 
 .grid {
@@ -242,6 +359,10 @@ button.button {
 
 .grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wide-field {
+  grid-column: 1 / -1;
 }
 
 label {
@@ -254,6 +375,8 @@ label {
 
 input {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   padding: 10px 12px;
   border: 1px solid #cfd8ce;
@@ -263,7 +386,27 @@ input {
   font: inherit;
 }
 
-input:focus {
+input[type="date"] {
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfd8ce;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
   border-color: var(--accent);
   outline: 3px solid rgba(40, 100, 67, 0.16);
 }
@@ -318,17 +461,35 @@ input:focus {
   margin-top: 18px;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+button:disabled,
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 @media (max-width: 760px) {
   .topbar,
   .section-head,
-  .group-card,
   .qr-box {
-    align-items: stretch;
     flex-direction: column;
   }
 
   .topbar {
     position: static;
+    flex-direction: row;
+    align-items: center;
+    padding: 22px 30px;
   }
 
   .group-card {
@@ -337,7 +498,8 @@ input:focus {
 
   .grid.two,
   .meta,
-  .detail-grid {
+  .detail-grid,
+  .group-summary {
     grid-template-columns: 1fr;
   }
 
@@ -351,6 +513,24 @@ input:focus {
   .button,
   button.button {
     width: 100%;
+  }
+
+  label {
+    min-width: 0;
+  }
+
+  .form-card {
+    overflow: hidden;
+  }
+
+  .profile-menu {
+    right: 0;
+    width: min(280px, calc(100vw - 32px));
+  }
+
+  .profile-button {
+    width: 42px;
+    height: 42px;
   }
 }
 
