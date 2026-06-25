@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Админка | Bale Checker</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Bale Checker</a>
+      <nav class="nav">
+        <a href="/admin">Группы</a>
+        <a class="button small" href="/admin/new">Новая группа</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section id="admin-list" class="view hidden">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Админка</p>
+            <h1>Группы тюков</h1>
+          </div>
+          <a class="button" href="/admin/new">Создать группу</a>
+        </div>
+        <div id="status" class="status"></div>
+        <div id="groups-list" class="group-list"></div>
+      </section>
+
+      <section id="admin-form" class="view hidden">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Админка</p>
+            <h1 id="form-title">Новая группа</h1>
+          </div>
+          <a class="button secondary" href="/admin">Назад</a>
+        </div>
+
+        <form id="group-form" class="form-card">
+          <div class="grid two">
+            <label>
+              Дата покоса
+              <input name="mowing_date" type="date" required>
+            </label>
+            <label>
+              Дата зарулонивания
+              <input name="baling_date" type="date" required>
+            </label>
+            <label>
+              Влажность минимум, %
+              <input name="moisture_min_percent" type="number" min="0" max="100" step="0.1" required>
+            </label>
+            <label>
+              Влажность максимум, %
+              <input name="moisture_max_percent" type="number" min="0" max="100" step="0.1" required>
+            </label>
+            <label>
+              Укос за год
+              <input name="cut_number_this_year" type="number" min="1" step="1" required>
+            </label>
+            <label>
+              Укос за весь период
+              <input name="cut_number_total" type="number" min="1" step="1" required>
+            </label>
+            <label>
+              Культура
+              <input name="crop_type" type="text" required placeholder="Люцерна">
+            </label>
+            <label>
+              Название поля
+              <input name="field_name" type="text" required placeholder="Поле 7">
+            </label>
+            <label>
+              Количество тюков
+              <input name="bales_count" type="number" min="1" step="1" required>
+            </label>
+          </div>
+
+          <div id="form-errors" class="error-list"></div>
+          <div class="actions">
+            <button class="button" type="submit">Сохранить</button>
+            <a class="button secondary" href="/admin">Отмена</a>
+          </div>
+        </form>
+
+        <div id="created-result" class="qr-panel hidden"></div>
+      </section>
+    </main>
+
+    <script src="/qrcode.min.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

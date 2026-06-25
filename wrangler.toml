@@ -1,0 +1,8 @@
+name = "bale-checker"
+compatibility_date = "2026-06-25"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bale_checker_db"
+database_id = "378ccadb-30f9-4871-8145-4b008f012208"
