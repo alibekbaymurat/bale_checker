@@ -11,6 +11,37 @@ const REQUIRED_FIELDS = [
   "bales_count",
 ];
 
+const GROUP_SELECT_COLUMNS = [
+  "id",
+  "group_name",
+  "mowing_date",
+  "baling_date",
+  "moisture_min_percent",
+  "moisture_max_percent",
+  "cut_number_this_year",
+  "cut_number_total",
+  "crop_type",
+  "field_name",
+  "bales_count",
+  "notes",
+  "created_at",
+  "updated_at",
+];
+
+const GROUP_MUTABLE_COLUMNS = [
+  "group_name",
+  "mowing_date",
+  "baling_date",
+  "moisture_min_percent",
+  "moisture_max_percent",
+  "cut_number_this_year",
+  "cut_number_total",
+  "crop_type",
+  "field_name",
+  "bales_count",
+  "notes",
+];
+
 const SESSION_COOKIE = "bc_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const PASSWORD_ITERATIONS = 100000;
@@ -262,6 +293,10 @@ function normalizePayload(input) {
   };
 }
 
+function groupValues(data) {
+  return GROUP_MUTABLE_COLUMNS.map((field) => data[field]);
+}
+
 function validatePayload(input) {
   if (!input || typeof input !== "object") {
     return ["Неверный JSON-запрос."];
@@ -325,9 +360,7 @@ async function createUniqueId(db) {
 
 async function listGroups(env) {
   const { results } = await env.DB.prepare(
-    `SELECT id, group_name, mowing_date, baling_date, moisture_min_percent, moisture_max_percent,
-            cut_number_this_year, cut_number_total, crop_type, field_name, bales_count,
-            notes, created_at, updated_at
+    `SELECT ${GROUP_SELECT_COLUMNS.join(", ")}
        FROM bale_groups
       ORDER BY baling_date DESC, created_at DESC`
   ).all();
@@ -335,8 +368,12 @@ async function listGroups(env) {
   return json({ groups: results || [] });
 }
 
+async function findGroupById(env, id) {
+  return env.DB.prepare(`SELECT ${GROUP_SELECT_COLUMNS.join(", ")} FROM bale_groups WHERE id = ?`).bind(id).first();
+}
+
 async function getGroup(env, id) {
-  const group = await env.DB.prepare("SELECT * FROM bale_groups WHERE id = ?").bind(id).first();
+  const group = await findGroupById(env, id);
   if (!group) {
     return json({ error: "Группа не найдена." }, 404);
   }
@@ -354,28 +391,13 @@ async function createGroup(request, env) {
   const id = await createUniqueId(env.DB);
 
   await env.DB.prepare(
-    `INSERT INTO bale_groups (
-       id, group_name, mowing_date, baling_date, moisture_min_percent, moisture_max_percent,
-       cut_number_this_year, cut_number_total, crop_type, field_name, bales_count, notes
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO bale_groups (id, ${GROUP_MUTABLE_COLUMNS.join(", ")})
+     VALUES (${["?"].concat(GROUP_MUTABLE_COLUMNS.map(() => "?")).join(", ")})`
   )
-    .bind(
-      id,
-      data.group_name,
-      data.mowing_date,
-      data.baling_date,
-      data.moisture_min_percent,
-      data.moisture_max_percent,
-      data.cut_number_this_year,
-      data.cut_number_total,
-      data.crop_type,
-      data.field_name,
-      data.bales_count,
-      data.notes
-    )
+    .bind(id, ...groupValues(data))
     .run();
 
-  const group = await env.DB.prepare("SELECT * FROM bale_groups WHERE id = ?").bind(id).first();
+  const group = await findGroupById(env, id);
   return json({ group }, 201);
 }
 
@@ -394,37 +416,14 @@ async function updateGroup(request, env, id) {
   const data = normalizePayload(input);
   await env.DB.prepare(
     `UPDATE bale_groups
-        SET group_name = ?,
-            mowing_date = ?,
-            baling_date = ?,
-            moisture_min_percent = ?,
-            moisture_max_percent = ?,
-            cut_number_this_year = ?,
-            cut_number_total = ?,
-            crop_type = ?,
-            field_name = ?,
-            bales_count = ?,
-            notes = ?,
+        SET ${GROUP_MUTABLE_COLUMNS.map((field) => `${field} = ?`).join(",\n            ")},
             updated_at = CURRENT_TIMESTAMP
       WHERE id = ?`
   )
-    .bind(
-      data.group_name,
-      data.mowing_date,
-      data.baling_date,
-      data.moisture_min_percent,
-      data.moisture_max_percent,
-      data.cut_number_this_year,
-      data.cut_number_total,
-      data.crop_type,
-      data.field_name,
-      data.bales_count,
-      data.notes,
-      id
-    )
+    .bind(...groupValues(data), id)
     .run();
 
-  const group = await env.DB.prepare("SELECT * FROM bale_groups WHERE id = ?").bind(id).first();
+  const group = await findGroupById(env, id);
   return json({ group });
 }
 
@@ -541,19 +540,37 @@ function htmlPath(pathname) {
   return null;
 }
 
+function serverErrorResponse(error, url) {
+  console.error(error);
+  if (url.pathname.startsWith("/api/")) {
+    return json({ error: "Внутренняя ошибка сервера." }, 500);
+  }
+  return new Response("Внутренняя ошибка сервера.", {
+    status: 500,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/api/")) {
-      return handleApi(request, env, url);
-    }
+    try {
+      if (url.pathname.startsWith("/api/")) {
+        return handleApi(request, env, url);
+      }
 
-    const html = htmlPath(url.pathname);
-    if (html) {
-      return env.ASSETS.fetch(assetRequest(request, html));
-    }
+      const html = htmlPath(url.pathname);
+      if (html) {
+        return env.ASSETS.fetch(assetRequest(request, html));
+      }
 
-    return env.ASSETS.fetch(request);
+      return env.ASSETS.fetch(request);
+    } catch (error) {
+      return serverErrorResponse(error, url);
+    }
   },
 };

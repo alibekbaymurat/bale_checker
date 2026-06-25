@@ -1,0 +1,2 @@
+ALTER TABLE bale_groups ADD COLUMN group_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE bale_groups ADD COLUMN notes TEXT NOT NULL DEFAULT '';

@@ -11,9 +11,11 @@ public/
   group.html
   styles.css
   app.js
+  person.svg
   qrcode.min.js
 src/
   index.js
+migrations/
 schema.sql
 wrangler.toml
 package.json
@@ -41,6 +43,12 @@ npx wrangler d1 create bale_checker_db
 
 ```bash
 npm run db:apply:remote
+```
+
+Для существующей базы после обновления с новыми полями:
+
+```bash
+npm run db:migrate:remote
 ```
 
 ## Авторизация
@@ -76,6 +84,7 @@ npm run deploy
 - `/admin` - список групп
 - `/admin/new` - создание группы
 - `/admin/edit/:id` - редактирование группы
+- `/admin/group/:id` - полная информация по группе в личном кабинете
 - `/group/:id` - публичная страница для QR
 
 API:
